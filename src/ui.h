@@ -38,7 +38,8 @@ namespace ui
     #define COLOUR_RED matrix.color565(255, 0, 0)
     #define COLOUR_RED_DIM matrix.color565(7, 0, 0)
     #define COLOUR_GREEN matrix.color565(0, 0, 16)
-    #define COLOUR_BLUE matrix.color565(0, 16, 0)
+    #define COLOUR_CYAN matrix.color565(0, 64, 64)
+    #define COLOUR_BLUE matrix.color565(0, 64, 0)
     #define COLOUR_PURPLE matrix.color565(255, 255, 0)
     #define COLOUR_PURPLE_DARK matrix.color565(16, 16, 16)
     #define COLOUR_WHITE matrix.color565(255, 255, 255)
@@ -272,9 +273,18 @@ namespace ui
                             {
                                 matrix.drawPixel(i, j + trackOffset, COLOUR_WHITE);
                             } 
+                            // Cursor in Bounds
+                            else if(i == cursor && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end) {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_CYAN);
+                            } 
                             // Cursor
                             else if(i == cursor && selectedTrack == t) {
                                 matrix.drawPixel(i, j + trackOffset, COLOUR_BLUE);
+                            } 
+                            // Selection from Cursor in Bounds
+                            else if (i > cursor && i < cursor + cursorLen && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end) 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_CYAN);
                             } 
                             // Selection from Cursor
                             else if (i > cursor && i < cursor + cursorLen && selectedTrack == t) 
