@@ -9,15 +9,17 @@ namespace config {
     // ENGINE CONFIG
     // ======================================================================
 
-    #define MAX_TRACKS 1
-    #define MAX_SEQUENCES 8
+    #define MAX_TRACKS 2
+    #define MAX_SEQUENCES 16
     #define MAX_STEPS 64
-    #define MAX_NOTE_VALUE 16
+    #define MAX_NOTE_VALUE 8
 
     #define RANDOM_MIN_NOTE 0
-    #define RANDOM_MAX_NOTE 15
+    #define RANDOM_MAX_NOTE MAX_NOTE_VALUE
     #define RANDOM_MIN_NOTE_LENGTH 1
     #define RANDOM_MAX_NOTE_LENGTH 1
+
+    #define RANDOM_GATE_PROBABILITY 30
 
     #define DEFAULT_START_POS 17
     #define DEFAULT_END_POS 32
@@ -25,6 +27,8 @@ namespace config {
     #define DEFAULT_CURSOR_POS 0
     #define DEFAULT_CURSOR_LENGTH 4
     #define DEFAULT_TRACK 0
+
+    #define SMALL_TRACK_SIZE 3
 
     // ======================================================================
     // HARDWARE CONFIG

@@ -69,10 +69,27 @@ namespace engine
             int e = min(end_selection, MAX_STEPS);
             for(int i = s; i < e; i++) 
             {
-                steps[i].note = random(RANDOM_MIN_NOTE, RANDOM_MAX_NOTE + 1);
+                steps[i].note = random(RANDOM_MIN_NOTE, RANDOM_MAX_NOTE);
                 steps[i].length = random(RANDOM_MIN_NOTE_LENGTH, RANDOM_MAX_NOTE_LENGTH + 1);
-                steps[i].active = random(0, 2);
+
+
+                int temp = random(0, 100);
+
+                if(temp < RANDOM_GATE_PROBABILITY)
+                {
+                    steps[i].active = true;
+                }
+                else
+                {
+                    steps[i].active = false;
+                }
             }   
+        }
+
+        void randomizeBounds()
+        {
+            start = random(0, MAX_STEPS / 2);
+            end = random(MAX_STEPS / 2 + 1, MAX_STEPS);
         }
 
         void invert(int start_selection, int end_selection) 
@@ -93,7 +110,7 @@ namespace engine
 
             for(int i = s; i < e; i++) 
             {
-                if(steps[i].note < MAX_NOTE_VALUE) 
+                if(steps[i].note < MAX_NOTE_VALUE - 1) 
                 {
                     steps[i].note += 1; 
                 }
@@ -206,6 +223,16 @@ namespace engine
             }
             currentSequence -= 1;
         }
+
+        void jump(int pos) 
+        {
+            if (pos >= MAX_STEPS)
+            {
+                return;
+            }
+            step = pos;
+            tick = 0;
+        }
     };
 
     // ======================================================================
@@ -223,6 +250,7 @@ namespace engine
                 for(int j = 0; j < MAX_SEQUENCES; j++) 
                 {
                     tracks[i].seqs[j].randomize(0, MAX_STEPS);
+                    tracks[i].seqs[j].randomizeBounds();
                 }
             } 
         }

@@ -37,9 +37,10 @@ namespace ui
 
     #define COLOUR_RED matrix.color565(255, 0, 0)
     #define COLOUR_RED_DIM matrix.color565(7, 0, 0)
-    #define COLOUR_GREEN matrix.color565(0, 0, 20)
-    #define COLOUR_BLUE matrix.color565(0, 40, 0)
+    #define COLOUR_GREEN matrix.color565(0, 0, 16)
+    #define COLOUR_BLUE matrix.color565(0, 16, 0)
     #define COLOUR_PURPLE matrix.color565(255, 255, 0)
+    #define COLOUR_PURPLE_DARK matrix.color565(16, 16, 16)
     #define COLOUR_WHITE matrix.color565(255, 255, 255)
     #define COLOUR_BLACK matrix.color565(0, 0, 0)
     #define COLOUR_YELLOW matrix.color565(0, 0, 0)
@@ -54,7 +55,7 @@ namespace ui
     {
         int cursor = DEFAULT_CURSOR_POS;
         int cursorLen = DEFAULT_CURSOR_LENGTH;
-        int track = 0;
+        int selectedTrack = 0;
         
         // ==================================================================
         // UI SETUP 
@@ -95,18 +96,29 @@ namespace ui
         // ==================================================================
         void scan(engine::Engine& seq) 
         {
-            engine::Track& currentTrack = seq.tracks[track];
+            engine::Track& currentTrack = seq.tracks[selectedTrack];
             engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
 
             int encoderButton = encoderBtn.read();
+
             int b1Pin = btn1.read();
             int b2Pin = btn2.read();
             int b3Pin = btn3.read();
             int b4Pin = btn4.read();
             int b5Pin = btn5.read();
-            int b6Pin = btn6.read();
+            int b6Pin = btn6.readDebounced();
             int b7Pin = btn7.read();
-            int b8Pin = btn8.read();
+            int b8Pin = btn8.readDebounced();
+
+            if(b8Pin == HIGH) 
+            {
+                selectNextTrack();
+            }
+
+            if(b6Pin == HIGH)
+            {
+                currentTrack.jump(cursor);
+            }
 
             static int pos = 0;
             int state = 0;
@@ -127,10 +139,13 @@ namespace ui
             pos = newPos;
 
 
-            if(encoderButton == LOW) 
+            if(encoderButton == LOW)    // REVERSE POLARITY FOR SOME REASON... 
             {
-                if(state == 1) cursorLen += 1;
-                else if(state == -1) cursorLen -= 1;
+
+                if(state == 1) currentSequence.transposeUp(cursor, cursor + cursorLen);
+                else if(state == -1) currentSequence.transposeDown(cursor, cursor + cursorLen);
+
+
             }
             else if(b1Pin == HIGH) 
             {
@@ -140,8 +155,10 @@ namespace ui
             }
             else if(b2Pin == HIGH) 
             {
-                if(state == 1) currentSequence.transposeUp(cursor, cursor + cursorLen);
-                else if(state == -1) currentSequence.transposeDown(cursor, cursor + cursorLen);
+                if(state == 1) cursorLen += 1;
+                else if(state == -1) cursorLen -= 1;
+                // if(state == 1) currentSequence.transposeUp(cursor, cursor + cursorLen);
+                // else if(state == -1) currentSequence.transposeDown(cursor, cursor + cursorLen);
             }
             else if(b3Pin == HIGH && b4Pin == HIGH) 
             {
@@ -174,18 +191,18 @@ namespace ui
             {
                 currentSequence.invert(cursor, cursor + cursorLen);
             }
-            else if(b6Pin == HIGH) 
-            {
-                currentSequence.reverse(cursor, cursor + cursorLen);
-            }
+            // else if(b6Pin == HIGH) 
+            // {
+            //     currentSequence.reverse(cursor, cursor + cursorLen);
+            // }
             else if(b7Pin == HIGH) 
             {
                 currentSequence.randomize(cursor, cursor + cursorLen);
             }
-            else if(b8Pin == HIGH) 
-            {
-                currentSequence.sustain(cursor, cursor + cursorLen);
-            }
+            // else if(b8Pin == HIGH) 
+            // {
+            //     currentSequence.sustain(cursor, cursor + cursorLen);
+            // }
             else if(state == 1)
             {
                 if(cursor >= MAX_STEPS) return;
@@ -205,7 +222,17 @@ namespace ui
             drawTrack(seq);
             drawGateTrack(seq);
             drawSequenceSelector(seq);
+            drawSequenceLength(seq);
             finishDraw();
+        }
+
+        void selectNextTrack() {
+            if(selectedTrack >= MAX_TRACKS - 1)
+            {
+                selectedTrack = 0;
+            } else {
+                selectedTrack += 1;
+            }
         }
 
 
@@ -214,60 +241,66 @@ namespace ui
         // ==================================================================
         void drawTrack(engine::Engine& seq) 
         {
-            engine::Track& currentTrack = seq.tracks[track];
-            engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
-
-            // Draw Track
-            for(int i = 0; i < MAX_STEPS; i++) 
+            for(int t = 0; t < MAX_TRACKS; t++)
             {
-                for(int j = 0; j < MAX_NOTE_VALUE; j++) 
-                {
+                int trackOffset = t * MAX_NOTE_VALUE + t;
+                engine::Track& currentTrack = seq.tracks[t];
+                engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
 
-                    // Note
-                    if((MAX_NOTE_VALUE - 1 - currentSequence.steps[i].note) == j) 
+                // Draw Track
+                for(int i = 0; i < MAX_STEPS; i++) 
+                {
+                    for(int j = 0; j < MAX_NOTE_VALUE; j++) 
                     {
-                        if(currentSequence.steps[i].active == true) 
+
+                        // Note
+                        if((MAX_NOTE_VALUE - 1 - currentSequence.steps[i].note) == j) 
                         {
-                            matrix.drawPixel(i, j, COLOUR_RED);
+                            if(currentSequence.steps[i].active == true) 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_RED);
+                            } 
+                            else 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_RED_DIM);
+                            }
                         } 
                         else 
                         {
-                            matrix.drawPixel(i, j, COLOUR_RED_DIM);
-                        }
-                    } 
-                    else 
-                    {
-                        // Playhead
-                        if (i == currentTrack.step) 
-                        {
-                            matrix.drawPixel(i, j, COLOUR_WHITE);
-                        } 
-                        // Cursor
-                        else if(i == cursor) {
-                            matrix.drawPixel(i, j, COLOUR_BLUE);
-                        } 
-                        // Selection from Cursor
-                        else if (i > cursor && i < cursor + cursorLen) 
-                        {
-                            matrix.drawPixel(i, j, COLOUR_BLUE);
-                        } 
-                        // Start Mask
-                        else if (i < currentSequence.start) 
-                        {
-                            matrix.drawPixel(i, j, COLOUR_BLACK);
-                        } 
-                        // End Mask
-                        else if (i > currentSequence.end) 
-                        {
-                            matrix.drawPixel(i, j, COLOUR_BLACK);
-                        } 
-                        // Void 
-                        else 
-                        {
-                            matrix.drawPixel(i, j, COLOUR_GREEN);
+                            // Playhead
+                            if (i == currentTrack.step) 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_WHITE);
+                            } 
+                            // Cursor
+                            else if(i == cursor && selectedTrack == t) {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_BLUE);
+                            } 
+                            // Selection from Cursor
+                            else if (i > cursor && i < cursor + cursorLen && selectedTrack == t) 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_BLUE);
+                            } 
+                            // Start Mask
+                            else if (i < currentSequence.start) 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_BLACK);
+                            } 
+                            // End Mask
+                            else if (i > currentSequence.end) 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_BLACK);
+                            } 
+                            // Void 
+                            else 
+                            {
+                                matrix.drawPixel(i, j + trackOffset, COLOUR_GREEN);
+                            }
                         }
                     }
                 }
+
+                matrix.drawLine(0, t * MAX_NOTE_VALUE + t + MAX_NOTE_VALUE, 63, t * MAX_NOTE_VALUE + t + MAX_NOTE_VALUE, COLOUR_PURPLE_DARK);
             }
         } 
 
@@ -276,8 +309,10 @@ namespace ui
         // ==================================================================
         void drawGateTrack(engine::Engine& seq) 
         {
-            engine::Track& currentTrack = seq.tracks[track];
+            engine::Track& currentTrack = seq.tracks[selectedTrack];
             engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
+
+            int yLocation = MAX_TRACKS * MAX_NOTE_VALUE + MAX_TRACKS;
 
             for(int i = 0; i < MAX_STEPS; i++) 
             {
@@ -285,16 +320,16 @@ namespace ui
                 {
                     if(currentTrack.step == i) 
                     {
-                        matrix.drawLine(i, 20, i, 21, COLOUR_PURPLE);
+                        matrix.drawLine(i, yLocation, i, yLocation + 1, COLOUR_PURPLE);
                     } 
                     else 
                     {
-                        matrix.drawLine(i, 20, i, 21, COLOUR_WHITE);
+                        matrix.drawLine(i, yLocation, i, yLocation + 1, COLOUR_WHITE);
                     }
                 } 
                 else 
                 {
-                    matrix.drawLine(i, 20, i, 21, COLOUR_BLACK);
+                    matrix.drawLine(i, yLocation, i, yLocation + 1, COLOUR_BLACK);
                 }
             }  
         }
@@ -305,12 +340,13 @@ namespace ui
         void drawSequenceLength(engine::Engine& seq)
         {
 
-            engine::Track& currentTrack = seq.tracks[track];
+            engine::Track& currentTrack = seq.tracks[selectedTrack];
             engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
 
             matrix.fillRect(26, 24, 11, 8, COLOUR_BLACK);
 
             matrix.setCursor(26, 24);
+            matrix.setTextSize(0);
             matrix.print(currentSequence.end - currentSequence.start);
         }
         
@@ -321,7 +357,7 @@ namespace ui
         {
             for(int i = 0; i < MAX_SEQUENCES; i++) 
             {
-                if(seq.tracks[track].currentSequence < i) 
+                if(seq.tracks[selectedTrack].currentSequence < i) 
                 {
                     matrix.drawLine(i, 28, i, 31, COLOUR_GREEN);
                 }
