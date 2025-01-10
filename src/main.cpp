@@ -16,7 +16,7 @@ int tempoValue = 0;
 
 // TODO FIND INTERRUPTS FOR THIS BOARD
 
-// int counter = 0;
+int counter = 0;
 // Timer Interrupt for clocking
 // ISR(TIMER2_COMPA_vect, ISR_NOBLOCK) {
 //   if(counter < tempoValue) {
@@ -40,6 +40,7 @@ void setup()
     Wire.begin(DAC_SDA, DAC_SCL);
     dac.begin(DAC_ADDR);
     pinMode(GATE_PIN, OUTPUT);
+    pinMode(CLOCK_PIN, OUTPUT);
 
     seqEngine.randomiseAll();
 
@@ -77,11 +78,17 @@ void loop()
 
         dac.setVoltage(seqEngine.getStep(track).note * (DAC_VALUES / MAX_NOTE_VALUE), false);
         digitalWrite(GATE_PIN, seqEngine.getStep(track).active);
+        digitalWrite(CLOCK_PIN, HIGH);
 
         interface.update(seqEngine);
 
         lastReading = millis();
         tempoValue = analogRead(A1);
-  }
+    }
+
+    if (millis () - lastReading >= tempoValue / 2)
+    {
+        digitalWrite(CLOCK_PIN, LOW);
+    } 
 }
 

@@ -16,6 +16,7 @@ namespace engine
         int note = 1;
         int length = 1;
         bool active = true;
+        int mod = 3;
     };
 
     // ======================================================================
@@ -71,7 +72,7 @@ namespace engine
             {
                 steps[i].note = random(RANDOM_MIN_NOTE, RANDOM_MAX_NOTE);
                 steps[i].length = random(RANDOM_MIN_NOTE_LENGTH, RANDOM_MAX_NOTE_LENGTH + 1);
-
+                steps[i].mod = random(0, MAX_MOD_VALUE + 1);
 
                 int temp = random(0, 100);
 
@@ -180,6 +181,9 @@ namespace engine
         int currentSequence = 0;
         int step = 0;
         int tick = 0;
+        
+        int cursor = DEFAULT_CURSOR_POS;
+        int cursorLen = DEFAULT_CURSOR_LENGTH;
 
         void nextTick() 
         {
@@ -232,6 +236,12 @@ namespace engine
             }
             step = pos;
             tick = 0;
+        }
+
+        void setBoundsToCursor() 
+        {
+            seqs[currentSequence].start = cursor;
+            seqs[currentSequence].end = cursor + cursorLen;
         }
     };
 

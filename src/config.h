@@ -9,10 +9,11 @@ namespace config {
     // ENGINE CONFIG
     // ======================================================================
 
-    #define MAX_TRACKS 2
+    #define MAX_TRACKS 3
     #define MAX_SEQUENCES 16
     #define MAX_STEPS 64
-    #define MAX_NOTE_VALUE 8
+    #define MAX_NOTE_VALUE 12
+    #define MAX_MOD_VALUE 8
 
     #define RANDOM_MIN_NOTE 0
     #define RANDOM_MAX_NOTE MAX_NOTE_VALUE
@@ -49,6 +50,7 @@ namespace config {
 
     // PINS
     #define GATE_PIN 1
+    #define CLOCK_PIN 3
 
     #define TEMPO_PIN A1
 
