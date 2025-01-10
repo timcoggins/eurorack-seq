@@ -1,7 +1,6 @@
 #include <Arduino.h>
 
-#ifndef SEQ_CONFIG
-#define SEQ_CONFIG 
+#pragma once
 
 namespace config {
 
@@ -77,5 +76,3 @@ namespace config {
     #define B9_PIN 19
     #define B10_PIN 11
 }
-
-#endif

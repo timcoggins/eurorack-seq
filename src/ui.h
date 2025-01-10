@@ -122,7 +122,6 @@ namespace ui
             int b9Pin = btn9.readDebounced();
             int b10Pin = btn10.readDebounced();
 
-
             if(b5Pin == HIGH)
             {
                 currentSequence.toggleLoop();
