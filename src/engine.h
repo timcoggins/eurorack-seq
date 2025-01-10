@@ -9,7 +9,7 @@ namespace engine
 {
 
     // ======================================================================
-    // step 
+    // Step 
     // ======================================================================
     struct Step 
     {
@@ -28,6 +28,13 @@ namespace engine
         
         int start = DEFAULT_START_POS;
         int end = DEFAULT_END_POS - 1;
+
+        bool enableLoop = true;
+
+        void toggleLoop()
+        {
+            enableLoop = !enableLoop;
+        }
 
         void setStart(int pos) 
         {
@@ -160,15 +167,42 @@ namespace engine
             } 
         }
 
-        void paste(int start_selection, int values[4]) 
+        void paste(int start_selection, Step values[MAX_STEPS], int len) 
         {
             int s = max(start_selection, 0);
 
-            for(int i = s + 1; i < s + 4; i++) 
+            int j = 0;
+            for(int i = s; i < s + len; i++) 
             {
-                steps[i].note = values[i]; 
+                steps[i] = values[j]; 
+                j += 1;
             } 
         }
+
+        void mute(int start_selection, int end_selection) 
+        {
+            int s = max(start_selection, 0);
+            int e = min(end_selection, MAX_STEPS);
+
+            for(int i = s; i < e; i++) 
+            {
+                steps[i].active = true; 
+            }
+        }
+
+        void unmute(int start_selection, int end_selection) 
+        {
+            int s = max(start_selection, 0);
+            int e = min(end_selection, MAX_STEPS);
+
+            for(int i = s; i < e; i++) 
+            {
+                steps[i].active = false; 
+            }
+        }
+
+        // remove()
+        // insert()
     };
 
     // ======================================================================
@@ -178,12 +212,15 @@ namespace engine
     {
         Sequence seqs[MAX_SEQUENCES];
 
-        int currentSequence = 0;
-        int step = 0;
         int tick = 0;
+        int step = 0;
+
+        int currentSequence = 0;
         
         int cursor = DEFAULT_CURSOR_POS;
         int cursorLen = DEFAULT_CURSOR_LENGTH;
+
+
 
         void nextTick() 
         {
@@ -200,11 +237,15 @@ namespace engine
 
         void nextStep() 
         {
-            if(step >= seqs[currentSequence].end || step >= MAX_STEPS - 1) 
+            if(step == seqs[currentSequence].end && seqs[currentSequence].enableLoop) 
             {
                 step = seqs[currentSequence].start;
             } 
-            else 
+            else if(step >= MAX_STEPS - 1)
+            {
+                step = 0;
+            }
+            else
             {
                 step += 1;
             }

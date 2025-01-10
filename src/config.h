@@ -10,9 +10,9 @@ namespace config {
     // ======================================================================
 
     #define MAX_TRACKS 3
-    #define MAX_SEQUENCES 16
+    #define MAX_SEQUENCES 64
     #define MAX_STEPS 64
-    #define MAX_NOTE_VALUE 12
+    #define MAX_NOTE_VALUE 16
     #define MAX_MOD_VALUE 8
 
     #define RANDOM_MIN_NOTE 0
@@ -57,8 +57,8 @@ namespace config {
     #define RANDOM_SEED_PIN 0
 
     // ENCODER
-    #define ENC_PIN1 20
-    #define ENC_PIN2 21
+    #define ENC_PIN1 21
+    #define ENC_PIN2 20
     #define ENC_BUTTON_PIN 47
 
     #define ROTARYSTEPS 1
@@ -74,6 +74,8 @@ namespace config {
     #define B6_PIN 38
     #define B7_PIN 41
     #define B8_PIN 42
+    #define B9_PIN 19
+    #define B10_PIN 11
 }
 
 #endif

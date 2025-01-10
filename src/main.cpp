@@ -45,7 +45,6 @@ void setup()
     seqEngine.randomiseAll();
 
     interface.setup();
-    interface.drawSequenceLength(seqEngine);
 
     pinMode(TEMPO_PIN, INPUT);
 

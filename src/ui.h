@@ -1,15 +1,19 @@
 #pragma once
 
-#include <Adafruit_Protomatter.h>
+#include <Arduino.h>
 #include <RotaryEncoder.h>
 #include "engine.h"
 #include "button.h"
+#include "display.h"
 
 
 using namespace config;
 
 namespace ui 
 {
+
+    Display display;
+
     RotaryEncoder *encoder = nullptr;
 
     Button encoderBtn(ENC_BUTTON_PIN);
@@ -21,47 +25,39 @@ namespace ui
     Button btn6(B6_PIN);
     Button btn7(B7_PIN);
     Button btn8(B8_PIN);
+    Button btn9(B9_PIN);
+    Button btn10(B10_PIN);
 
-    Adafruit_Protomatter matrix(
-        64,                                   // Width of matrix (or matrix chain) in pixels
-        4,                                    // Bit depth, 1-6
-        1, rgbPins,                           // # of matrix chains, array of 6 RGB pins for each
-        4, addrPins,                          // # of address pins (height is inferred), array of pins
-        clockPin, latchPin, oePin,            // Other matrix control pins
-        false                                 // No double-buffering here (see "doublebuffer" example)
-    );                               
+    
+
 
     // ==================================================================
     // UI COLOUR DEFS 
     // ==================================================================
 
-    #define COLOUR_RED matrix.color565(255, 0, 0)
-    #define COLOUR_RED_DIM matrix.color565(7, 0, 0)
-    #define COLOUR_GREEN matrix.color565(0, 0, 16)
-    #define COLOUR_CYAN matrix.color565(0, 64, 64)
-    #define COLOUR_BLUE matrix.color565(0, 64, 0)
-    #define COLOUR_PURPLE matrix.color565(255, 255, 0)
-    #define COLOUR_PURPLE_DARK matrix.color565(16, 16, 16)
-    #define COLOUR_WHITE matrix.color565(255, 255, 255)
-    #define COLOUR_BLACK matrix.color565(0, 0, 0)
-    #define COLOUR_YELLOW matrix.color565(64, 0, 16)
+
 
     void checkPosition()
     {
         encoder->tick(); // just call tick() to check the state.
     }
 
-
     struct Ui 
     {
+        // MODE currentMode = MODE::TRACK;
 
         int selectedTrack = 0;
-        
+        engine::Step copyBuffer[MAX_STEPS];
+        int copyLength = 0;
+        int page = 0;
+
         // ==================================================================
         // UI SETUP 
         // ==================================================================
         void setup() 
         {
+            display.setup();
+
             encoder = new RotaryEncoder(ENC_PIN1, ENC_PIN2, RotaryEncoder::LatchMode::TWO03);
 
             encoderBtn.setup();
@@ -73,23 +69,37 @@ namespace ui
             btn6.setup();
             btn7.setup();
             btn8.setup();
+            btn9.setup();
+            btn10.setup();
 
             // register interrupt routine
             attachInterrupt(digitalPinToInterrupt(ENC_PIN1), checkPosition, CHANGE);   
             attachInterrupt(digitalPinToInterrupt(ENC_PIN2), checkPosition, CHANGE);
+        }
 
-            Serial.begin(9600);
-
-            // Initialize matrix...
-            ProtomatterStatus status = matrix.begin();
-            Serial.print("Protomatter begin() status: ");
-            Serial.println((int)status);
-            if(status != PROTOMATTER_OK) 
+        void copyToBuffer(engine::Track& currentTrack)
+        {
+            engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
+            int j = 0;
+            for(int i = currentTrack.cursor; i < currentTrack.cursor + currentTrack.cursorLen; i++)
             {
-                // DO NOT CONTINUE if matrix setup encountered an error.
-                for(;;);
+                copyBuffer[j] = currentSequence.steps[i];
+                j += 1;
+            }
+            copyLength = j;
+        }
+
+        void nextPage() {
+            if(page == 1)
+            {
+                page = 0;
+            }
+            else
+            {
+                page = 1;
             }
         }
+
 
         // ==================================================================
         // RUNS ON EVERY LOOP 
@@ -107,29 +117,45 @@ namespace ui
             int b4Pin = btn4.read();
             int b5Pin = btn5.readDebounced();
             int b6Pin = btn6.readDebounced();
-            int b7Pin = btn7.read();
+            int b7Pin = btn7.readDebounced();
             int b8Pin = btn8.readDebounced();
+            int b9Pin = btn9.readDebounced();
+            int b10Pin = btn10.readDebounced();
 
-            if(b8Pin == HIGH) 
-            {
-                selectNextTrack();
-            }
 
             if(b5Pin == HIGH)
             {
+                currentSequence.toggleLoop();
+            }
+            if(b6Pin == HIGH)
+            {
+                nextPage();
+            }
+            if(b7Pin == HIGH)
+            {
+                copyToBuffer(currentTrack);
+            }
+            if(b8Pin == HIGH) 
+            {
+                int len = min(copyLength, currentTrack.cursorLen);
+                currentSequence.paste(currentTrack.cursor, copyBuffer, len);
+            }
+            if(b9Pin == HIGH)
+            {
                 currentTrack.setBoundsToCursor();
             }
-
-            if(b6Pin == HIGH)
+            if(b10Pin == HIGH)
             {
                 currentTrack.jump(currentTrack.cursor);
             }
+
 
             static int pos = 0;
             int state = 0;
 
             encoder->tick(); // just call tick() to check the state.
             int newPos = encoder->getPosition();
+
 
             if (pos == newPos) return;
 
@@ -143,27 +169,20 @@ namespace ui
             }
             pos = newPos;
 
-
             if(encoderButton == LOW)    // REVERSE POLARITY FOR SOME REASON... 
-            {
-
-                if(state == 1) currentSequence.transposeUp(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-                else if(state == -1) currentSequence.transposeDown(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-
-
-            }
-            else if(b1Pin == HIGH) 
-            {
-                if(state == 1) currentTrack.incSequence();
-                else if(state == -1) currentTrack.decSequence();
-                drawSequenceLength(seq);
-            }
-            else if(b2Pin == HIGH) 
             {
                 if(state == 1) currentTrack.cursorLen += 1;
                 else if(state == -1) currentTrack.cursorLen -= 1;
-                // if(state == 1) currentSequence.transposeUp(cursor, cursor + cursorLen);
-                // else if(state == -1) currentSequence.transposeDown(cursor, cursor + cursorLen);
+            }
+            else if(b1Pin == HIGH) 
+            {
+                if(state == 1) currentSequence.transposeUp(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+                else if(state == -1) currentSequence.transposeDown(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+            }
+            else if(b2Pin == HIGH) 
+            {
+                if(state == 1) currentSequence.mute(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+                else if(state == -1) currentSequence.unmute(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
             }
             else if(b3Pin == HIGH && b4Pin == HIGH) 
             {
@@ -171,26 +190,22 @@ namespace ui
                 {
                     currentSequence.increaseStart();
                     currentSequence.increaseEnd();
-                    drawSequenceLength(seq);
                 }
                 if(state == -1) 
                 {
                     currentSequence.decreaseStart();
                     currentSequence.decreaseEnd();
-                    drawSequenceLength(seq);
                 }
             }
             else if(b3Pin == HIGH) 
             {
                 if(state == 1) currentSequence.increaseStart();
                 else if(state == -1) currentSequence.decreaseStart();
-                drawSequenceLength(seq);
             }
             else if(b4Pin == HIGH) 
             {
                 if(state == 1) currentSequence.increaseEnd();
                 else if(state == -1) currentSequence.decreaseEnd();
-                drawSequenceLength(seq);
             }
             // else if(b5Pin == HIGH) 
             // {
@@ -200,13 +215,15 @@ namespace ui
             // {
             //     currentSequence.reverse(cursor, cursor + cursorLen);
             // }
-            else if(b7Pin == HIGH) 
-            {
-                currentSequence.randomize(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-            }
+            // else if(b7Pin == HIGH) 
+            // {
+            //     currentSequence.randomize(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+            // }
             // else if(b8Pin == HIGH) 
             // {
-            //     currentSequence.sustain(cursor, cursor + cursorLen);
+            //     if(state == 1) currentTrack.incSequence();
+            //     else if(state == -1) currentTrack.decSequence();
+            //     // currentSequence.sustain(cursor, cursor + cursorLen);
             // }
             else if(state == 1)
             {
@@ -224,19 +241,26 @@ namespace ui
 
         void update(engine::Engine& seq) 
         {
-
             engine::Track& track = seq.tracks[selectedTrack];
 
-            drawTrack(track, 0);
-            drawDivider(12);
-            drawModTrack(track, 13);
-            drawDivider(21);
-            drawGateTrack(track, 22);
+            if(page == 0)
+            {
+                display.drawModTrack(track, 0);
+                display.drawDivider(8);
+                display.drawTrack(track, 9);
+                display.drawDivider(25);
+                display.drawGateTrack(track, 26);
+                display.drawDivider(28);
 
-            drawSequenceSelector(seq);
-            drawSequenceLength(seq);
+                display.drawSequenceSelector(track);
+                // display.drawSequenceLength(track);
+            }
+            else if(page == 1)
+            {
+                display.drawSequenceLength(track, 24);
+            }
 
-            finishDraw();
+            display.finishDraw();
         }
 
         void selectNextTrack() {
@@ -247,189 +271,5 @@ namespace ui
                 selectedTrack += 1;
             }
         }
-
-
-        // ==================================================================
-        // DRAW THE CURRENT TRACK 
-        // ==================================================================
-        void drawDivider(int yOffset)
-        {
-            matrix.drawLine(0, yOffset, 63, yOffset, COLOUR_PURPLE_DARK);
-        }
-
-
-        // ==================================================================
-        // DRAW PITCH TRACK 
-        // ==================================================================
-        void drawTrack(engine::Track& track, int yOffset) 
-        {
-            engine::Sequence& currentSequence = track.seqs[track.currentSequence];
-
-            int t = 0;
-
-            // Draw Track
-            for(int i = 0; i < MAX_STEPS; i++) 
-            {
-                for(int j = 0; j < MAX_NOTE_VALUE; j++) 
-                {
-
-                    // Note
-                    if((MAX_NOTE_VALUE - 1 - currentSequence.steps[i].note) == j) 
-                    {
-                        if(currentSequence.steps[i].active == true) 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_RED);
-                        } 
-                        else 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_RED_DIM);
-                        }
-                    } 
-                    else 
-                    {
-                        // Playhead
-                        if (i == track.step) 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_WHITE);
-                        } 
-                        // Cursor in Bounds
-                        else if(i == track.cursor && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end) {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_CYAN);
-                        } 
-                        // Cursor
-                        else if(i == track.cursor && selectedTrack == t) {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_BLUE);
-                        } 
-                        // Selection from Cursor in Bounds
-                        else if (i > track.cursor && i < track.cursor + track.cursorLen && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end) 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_CYAN);
-                        } 
-                        // Selection from Cursor
-                        else if (i > track.cursor && i < track.cursor + track.cursorLen && selectedTrack == t) 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_BLUE);
-                        } 
-                        // Start Mask
-                        else if (i < currentSequence.start) 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_BLACK);
-                        } 
-                        // End Mask
-                        else if (i > currentSequence.end) 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_BLACK);
-                        } 
-                        // Void 
-                        else 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_GREEN);
-                        }
-                    }
-                }
-
-                // 
-    
-
-
-
-                // matrix.drawLine(0, t * MAX_NOTE_VALUE + t + MAX_NOTE_VALUE + 11, 63, t * MAX_NOTE_VALUE + t + MAX_NOTE_VALUE + 11, COLOUR_PURPLE_DARK);
-
-            }
-        } 
-
-        
-        // ==================================================================
-        // DRAW MODULATION TRACK 
-        // ==================================================================
-        void drawModTrack(engine::Track& track, int yOffset)
-        {
-                engine::Sequence& currentSequence = track.seqs[track.currentSequence];
-
-                for(int i = 0; i < MAX_STEPS; i++) 
-                {
-                    for(int j = 0; j < MAX_MOD_VALUE; j++) 
-                    {
-                        if((MAX_MOD_VALUE - 1 - currentSequence.steps[i].mod) <= j) 
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_YELLOW);
-                        }
-                        else
-                        {
-                            matrix.drawPixel(i, j + yOffset, COLOUR_BLACK);
-                        }
-                    }
-                }
-        }
-
-        // ==================================================================
-        // DRAW GATE TRACK 
-        // ==================================================================
-        void drawGateTrack(engine::Track& track, int yOffset) 
-        {
-            engine::Sequence& currentSequence = track.seqs[track.currentSequence];
-
-            for(int i = 0; i < MAX_STEPS; i++) 
-            {
-                if(currentSequence.steps[i].active == true) 
-                {
-                    if(track.step == i) 
-                    {
-                        matrix.drawLine(i, yOffset, i, yOffset + 1, COLOUR_PURPLE);
-                    } 
-                    else 
-                    {
-                        matrix.drawLine(i, yOffset, i, yOffset + 1, COLOUR_WHITE);
-                    }
-                } 
-                else 
-                {
-                    matrix.drawLine(i, yOffset, i, yOffset + 1, COLOUR_BLACK);
-                }
-            }  
-        }
-
-        // ==================================================================
-        // DRAW SEQUENCE LENGTH 
-        // ==================================================================
-        void drawSequenceLength(engine::Engine& seq)
-        {
-
-            engine::Track& currentTrack = seq.tracks[selectedTrack];
-            engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
-
-            matrix.fillRect(26, 24, 11, 8, COLOUR_BLACK);
-
-            matrix.setCursor(26, 24);
-            matrix.setTextSize(0);
-            matrix.print(currentSequence.end - currentSequence.start);
-        }
-        
-        // ==================================================================
-        // DRAW SEQUENCE SELECTOR 
-        // ==================================================================
-        void drawSequenceSelector(engine::Engine& seq) 
-        {
-            for(int i = 0; i < MAX_SEQUENCES; i++) 
-            {
-                if(seq.tracks[selectedTrack].currentSequence < i) 
-                {
-                    matrix.drawLine(i, 28, i, 31, COLOUR_GREEN);
-                }
-                else 
-                {
-                    matrix.drawLine(i, 28, i, 31, COLOUR_WHITE);
-                }
-            }
-        }
-
-        // ==================================================================
-        // COMMIT DRAWING 
-        // ==================================================================
-        void finishDraw() 
-        {
-            matrix.show();
-        }
-
     };
 }
