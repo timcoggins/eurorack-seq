@@ -3,56 +3,53 @@
 
 #pragma once
 
-namespace ui 
+struct Button 
 {
 
-    struct Button 
+    int PIN;
+    int lastButtonState = LOW;
+    int state = LOW;
+
+    unsigned long lastDebounceTime = 0;
+    unsigned long debounceDelay = 50;
+
+    Button(int bPIN) 
     {
+        PIN = bPIN;
+    }
 
-        int PIN;
-        int lastButtonState = LOW;
-        int state = LOW;
+    void setup() 
+    {
+        pinMode(PIN, INPUT);
+    }
 
-        unsigned long lastDebounceTime = 0;
-        unsigned long debounceDelay = 50;
+    int readDebounced() 
+    {
+        int reading = digitalRead(PIN);    
 
-        Button(int bPIN) 
+        if (reading != lastButtonState) 
         {
-            PIN = bPIN;
+            lastDebounceTime = millis();
         }
 
-        void setup() 
+        if ((millis() - lastDebounceTime) > debounceDelay) 
         {
-            pinMode(PIN, INPUT);
-        }
-
-        int readDebounced() 
-        {
-            int reading = digitalRead(PIN);    
-
-            if (reading != lastButtonState) 
-            {
-                lastDebounceTime = millis();
-            }
-
-            if ((millis() - lastDebounceTime) > debounceDelay) 
-            {
-                if (reading != state) {
-                    state = reading;
-                    if (state == HIGH) {
-                        lastButtonState = reading;
-                        return HIGH;
-                    }
+            if (reading != state) {
+                state = reading;
+                if (state == HIGH) {
+                    lastButtonState = reading;
+                    return HIGH;
                 }
             }
-
-            lastButtonState = reading;
-            return LOW;
         }
 
-        int read() 
-        {
-            return digitalRead(PIN);
-        }
-    };
-}
+        lastButtonState = reading;
+        return LOW;
+    }
+
+    int read() 
+    {
+        state = digitalRead(PIN);
+        return state;
+    }
+};

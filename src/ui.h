@@ -1,10 +1,12 @@
 #pragma once
 
 #include <Arduino.h>
-#include <RotaryEncoder.h>
+
 #include "engine.h"
 #include "button.h"
+#include "encoder.h"
 #include "display.h"
+#include "lcd.h"
 
 
 using namespace config;
@@ -13,10 +15,11 @@ namespace ui
 {
 
     Display display;
+    Lcd lcdD;
 
-    RotaryEncoder *encoder = nullptr;
-
+    Encoder encoder;
     Button encoderBtn(ENC_BUTTON_PIN);
+
     Button btn1(B1_PIN);
     Button btn2(B2_PIN);
     Button btn3(B3_PIN);
@@ -28,38 +31,23 @@ namespace ui
     Button btn9(B9_PIN);
     Button btn10(B10_PIN);
 
-    
-
-
-    // ==================================================================
-    // UI COLOUR DEFS 
-    // ==================================================================
-
-
-
-    void checkPosition()
-    {
-        encoder->tick(); // just call tick() to check the state.
-    }
-
     struct Ui 
     {
-        // MODE currentMode = MODE::TRACK;
+        engine::Step copyBuffer[MAX_STEPS];
 
         int selectedTrack = 0;
-        engine::Step copyBuffer[MAX_STEPS];
         int copyLength = 0;
         int page = 0;
 
-        // ==================================================================
-        // UI SETUP 
-        // ==================================================================
+        /**
+         * Setup hardware
+         */
         void setup() 
         {
             display.setup();
+            lcdD.setup();
 
-            encoder = new RotaryEncoder(ENC_PIN1, ENC_PIN2, RotaryEncoder::LatchMode::TWO03);
-
+            encoder.setup();
             encoderBtn.setup();
             btn1.setup();
             btn2.setup();
@@ -71,12 +59,31 @@ namespace ui
             btn8.setup();
             btn9.setup();
             btn10.setup();
-
-            // register interrupt routine
-            attachInterrupt(digitalPinToInterrupt(ENC_PIN1), checkPosition, CHANGE);   
-            attachInterrupt(digitalPinToInterrupt(ENC_PIN2), checkPosition, CHANGE);
         }
 
+        /**
+         * Check the hardware and update each items state
+         */
+        void scan() 
+        {
+            encoder.read();
+            encoderBtn.read();
+
+            btn1.read();
+            btn2.read();
+            btn3.read();
+            btn4.read();
+            btn5.readDebounced();
+            btn6.readDebounced();
+            btn7.read();
+            btn8.readDebounced();
+            btn9.readDebounced();
+            btn10.readDebounced();
+        }
+
+        /**
+         * Copies the selected part of a sequence to the temporary buffer
+         */
         void copyToBuffer(engine::Track& currentTrack)
         {
             engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
@@ -89,179 +96,9 @@ namespace ui
             copyLength = j;
         }
 
-        void nextPage() {
-            if(page == 1)
-            {
-                page = 0;
-            }
-            else
-            {
-                page = 1;
-            }
-        }
-
-
-        // ==================================================================
-        // RUNS ON EVERY LOOP 
-        // ==================================================================
-        void scan(engine::Engine& seq) 
-        {
-            engine::Track& currentTrack = seq.tracks[selectedTrack];
-            engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
-
-            int encoderButton = encoderBtn.read();
-
-            int b1Pin = btn1.read();
-            int b2Pin = btn2.read();
-            int b3Pin = btn3.read();
-            int b4Pin = btn4.read();
-            int b5Pin = btn5.readDebounced();
-            int b6Pin = btn6.readDebounced();
-            int b7Pin = btn7.readDebounced();
-            int b8Pin = btn8.readDebounced();
-            int b9Pin = btn9.readDebounced();
-            int b10Pin = btn10.readDebounced();
-
-            if(b5Pin == HIGH)
-            {
-                currentSequence.toggleLoop();
-            }
-            if(b6Pin == HIGH)
-            {
-                nextPage();
-            }
-            if(b7Pin == HIGH)
-            {
-                copyToBuffer(currentTrack);
-            }
-            if(b8Pin == HIGH) 
-            {
-                int len = min(copyLength, currentTrack.cursorLen);
-                currentSequence.paste(currentTrack.cursor, copyBuffer, len);
-            }
-            if(b9Pin == HIGH)
-            {
-                currentTrack.setBoundsToCursor();
-            }
-            if(b10Pin == HIGH)
-            {
-                currentTrack.jump(currentTrack.cursor);
-            }
-
-
-            static int pos = 0;
-            int state = 0;
-
-            encoder->tick(); // just call tick() to check the state.
-            int newPos = encoder->getPosition();
-
-
-            if (pos == newPos) return;
-
-            if (pos > newPos) 
-            {
-                state = 1;
-            } 
-            else 
-            {
-                state -= 1;
-            }
-            pos = newPos;
-
-            if(encoderButton == LOW)    // REVERSE POLARITY FOR SOME REASON... 
-            {
-                if(state == 1) currentTrack.cursorLen += 1;
-                else if(state == -1) currentTrack.cursorLen -= 1;
-            }
-            else if(b1Pin == HIGH) 
-            {
-                if(state == 1) currentSequence.transposeUp(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-                else if(state == -1) currentSequence.transposeDown(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-            }
-            else if(b2Pin == HIGH) 
-            {
-                if(state == 1) currentSequence.mute(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-                else if(state == -1) currentSequence.unmute(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-            }
-            else if(b3Pin == HIGH && b4Pin == HIGH) 
-            {
-                if(state == 1) 
-                {
-                    currentSequence.increaseStart();
-                    currentSequence.increaseEnd();
-                }
-                if(state == -1) 
-                {
-                    currentSequence.decreaseStart();
-                    currentSequence.decreaseEnd();
-                }
-            }
-            else if(b3Pin == HIGH) 
-            {
-                if(state == 1) currentSequence.increaseStart();
-                else if(state == -1) currentSequence.decreaseStart();
-            }
-            else if(b4Pin == HIGH) 
-            {
-                if(state == 1) currentSequence.increaseEnd();
-                else if(state == -1) currentSequence.decreaseEnd();
-            }
-            // else if(b5Pin == HIGH) 
-            // {
-            //     currentSequence.invert(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-            // }
-            // else if(b6Pin == HIGH) 
-            // {
-            //     currentSequence.reverse(cursor, cursor + cursorLen);
-            // }
-            // else if(b7Pin == HIGH) 
-            // {
-            //     currentSequence.randomize(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
-            // }
-            // else if(b8Pin == HIGH) 
-            // {
-            //     if(state == 1) currentTrack.incSequence();
-            //     else if(state == -1) currentTrack.decSequence();
-            //     // currentSequence.sustain(cursor, cursor + cursorLen);
-            // }
-            else if(state == 1)
-            {
-                if(currentTrack.cursor >= MAX_STEPS) return;
-                currentTrack.cursor += 1;
-            }
-            else if(state == -1)
-            {
-                if(currentTrack.cursor <= 0) return;
-                currentTrack.cursor -= 1;
-            }
-
-            update(seq);
-        }
-
-        void update(engine::Engine& seq) 
-        {
-            engine::Track& track = seq.tracks[selectedTrack];
-
-            if(page == 0)
-            {
-                display.drawModTrack(track, 0);
-                display.drawDivider(8);
-                display.drawTrack(track, 9);
-                display.drawDivider(25);
-                display.drawGateTrack(track, 26);
-                display.drawDivider(28);
-
-                display.drawSequenceSelector(track);
-                // display.drawSequenceLength(track);
-            }
-            else if(page == 1)
-            {
-                display.drawSequenceLength(track, 24);
-            }
-
-            display.finishDraw();
-        }
-
+        /**
+         * Selects the next track
+         */
         void selectNextTrack() {
             if(selectedTrack >= MAX_TRACKS - 1)
             {
@@ -269,6 +106,189 @@ namespace ui
             } else {
                 selectedTrack += 1;
             }
+        }
+
+        /**
+         * Moves to the next menu page
+         */
+        void nextPage() {
+            if(page == MAX_UI_PAGES - 1)
+            {
+                page = 0;
+            }
+            else
+            {
+                page += 1;
+            }
+            display.clear();
+        }
+
+
+        /**
+         * Route controls based on which page we are on
+         */
+        void handleControls(engine::Engine& seq)
+        {
+
+            // Can switch between pages on every page
+            if(btn8.state == HIGH)
+            {
+                nextPage();
+            }
+
+            handleMainControls(seq);
+
+            // switch(page)
+            // {
+            //     case 0:
+            //         handleControls(seq);
+            //         break;
+            //     default:
+            //         break; 
+            // }
+        }
+
+
+        /**
+         * Handle Main Track Controls 
+         */
+        void handleMainControls(engine::Engine& seq)
+        {
+            engine::Track& currentTrack = seq.tracks[selectedTrack];
+            engine::Sequence& currentSequence = currentTrack.seqs[currentTrack.currentSequence];
+
+            // BUTTON COMBOS
+            if(btn1.state == HIGH && btn2.state == HIGH) 
+            {
+                if(encoder.state == 1) currentSequence.randomizeNotes(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+                else if (encoder.state == -1) currentSequence.randomizeGates(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+            }
+            else if(btn1.state == HIGH && btn3.state == HIGH) 
+            {
+                if(encoder.state == 1) currentSequence.increaseStart();
+                else if(encoder.state == -1) currentSequence.decreaseStart();
+            }
+            else if(btn1.state == HIGH && btn4.state == HIGH) 
+            {
+                if(encoder.state == 1) currentSequence.increaseEnd();
+                else if(encoder.state == -1) currentSequence.decreaseEnd();
+            }
+            else if(btn3.state == HIGH && btn4.state == HIGH) 
+            {
+                if(encoder.state == 1) 
+                {
+                    currentSequence.increaseStart();
+                    currentSequence.increaseEnd();
+                }
+                if(encoder.state == -1) 
+                {
+                    currentSequence.decreaseStart();
+                    currentSequence.decreaseEnd();
+                }
+            }
+
+            // WITH ENCODER
+            else if(btn1.state == HIGH) 
+            {
+                if(encoder.state == 1) 
+                {
+                    currentSequence.transposeUp(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+                }
+                else if(encoder.state == -1) 
+                {
+                    currentSequence.transposeDown(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+                }
+            }
+            else if(btn2.state == HIGH) 
+            {
+                if(encoder.state == 1) currentSequence.mute(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+                else if(encoder.state == -1) currentSequence.unmute(currentTrack.cursor, currentTrack.cursor + currentTrack.cursorLen);
+            }
+            else if(btn6.state == HIGH) 
+            {
+                if(encoder.state == 1) currentTrack.incSequence();
+                else if(encoder.state == -1) currentTrack.decSequence();
+            }
+            else if(btn7.state == HIGH) 
+            {
+                if(encoder.state == 1) currentTrack.incSequence();
+                else if(encoder.state == -1) currentTrack.decSequence();
+            }
+            else if(encoderBtn.state == LOW)    // REVERSE POLARITY FOR SOME REASON... 
+            {
+                if(encoder.state == 1) currentTrack.cursorLen += 1;
+                else if(encoder.state == -1) currentTrack.cursorLen -= 1;
+            }
+            else if(encoder.state == 1)
+            {
+                if(currentTrack.cursor >= MAX_STEPS) return;
+                currentTrack.cursor += 1;
+            }
+            else if(encoder.state == -1)
+            {
+                if(currentTrack.cursor <= 0) return;
+                currentTrack.cursor -= 1;
+            }
+            else if(btn5.state == HIGH)
+            {
+                currentSequence.toggleLoop();
+            }
+            else if(btn6.state == HIGH) 
+            {
+                currentSequence.sustain(currentTrack.cursor, currentTrack.cursorLen);
+            }
+            else if(btn7.state == HIGH)
+            {
+                currentTrack.jump(currentTrack.cursor);
+            }
+            else if(btn9.state == HIGH)
+            {
+                copyToBuffer(currentTrack);
+            }
+            else if(btn10.state == HIGH)
+            {   
+                int len = min(copyLength, currentTrack.cursorLen);
+                currentSequence.paste(currentTrack.cursor, copyBuffer, len);
+            }
+
+            update(seq);
+        }
+
+        /**
+         * Update the displays
+         */
+        void update(engine::Engine& seq) 
+        {
+            engine::Track& track = seq.tracks[selectedTrack];
+
+            if(page == 0)
+            {
+                display.drawLoopBounds(track, 0);
+                display.drawDivider(2);
+                display.drawTrack(track, 3);
+                display.drawDivider(19);
+                display.drawDivider(25);
+                display.drawGateTrack(track, 26);
+                display.drawDivider(28);
+
+                display.drawSequenceSelector(track, 30);
+            }
+            else if(page == 1)
+            {
+                display.drawOutputVoltages(seq.getNote(0));
+
+            }
+            else if(page == 2)
+            {
+                display.drawModTrack(track, 0);
+                display.drawDivider(8);
+                display.drawTrack(track, 9);
+                display.drawDivider(25);
+                display.drawGateTrack(track, 26);
+                display.drawSequenceLength(track, 26);
+            }
+
+            display.finishDraw();
         }
     };
 }

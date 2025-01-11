@@ -23,6 +23,8 @@ namespace engine
         int cursor = DEFAULT_CURSOR_POS;
         int cursorLen = DEFAULT_CURSOR_LENGTH;
 
+        int currentNote = 0;
+
         /**
          * Calculate the next tick and move step if needed
          */
@@ -32,6 +34,11 @@ namespace engine
             {
                 tick = 0;
                 nextStep();
+
+                if(seqs[currentSequence].steps[step].active)
+                {
+                    currentNote = seqs[currentSequence].steps[step].note;
+                }
             } 
             else 
             {
@@ -50,6 +57,14 @@ namespace engine
             } 
             else if(step >= MAX_STEPS - 1)
             {
+                if(currentSequence >= MAX_SEQUENCES - 1)
+                {
+                    currentSequence = 0;
+                }
+                else
+                {
+                    currentSequence += 1;
+                }
                 step = 0;
             }
             else

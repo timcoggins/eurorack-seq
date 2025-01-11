@@ -29,7 +29,7 @@ namespace engine
         int start = DEFAULT_START_POS;
         int end = DEFAULT_END_POS - 1;
 
-        bool enableLoop = true;
+        bool enableLoop = false;
 
         /**
          * Toggles the internal sequence loop
@@ -117,6 +117,42 @@ namespace engine
                 }
             }   
         }
+
+        /**
+         * Randomise note for the selected steps
+         */
+        void randomizeNotes(int start_selection, int end_selection) 
+        {
+            int s = max(start_selection, 0);
+            int e = min(end_selection, MAX_STEPS);
+            for(int i = s; i < e; i++) 
+            {
+                steps[i].note = random(RANDOM_MIN_NOTE, RANDOM_MAX_NOTE);
+            }   
+        }
+
+        /**
+         * Randomise gate for the selected steps
+         */
+        void randomizeGates(int start_selection, int end_selection) 
+        {
+            int s = max(start_selection, 0);
+            int e = min(end_selection, MAX_STEPS);
+            for(int i = s; i < e; i++) 
+            {
+                int temp = random(0, 100);
+
+                if(temp < RANDOM_GATE_PROBABILITY)
+                {
+                    steps[i].active = true;
+                }
+                else
+                {
+                    steps[i].active = false;
+                }
+            }   
+        }
+        
 
         /**
          * Randomise the start and end points of the loop

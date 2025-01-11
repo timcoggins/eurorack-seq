@@ -9,7 +9,7 @@ namespace config {
     // ======================================================================
 
     #define MAX_TRACKS 3
-    #define MAX_SEQUENCES 64
+    #define MAX_SEQUENCES 8
     #define MAX_STEPS 64
     #define MAX_NOTE_VALUE 16
     #define MAX_MOD_VALUE 8
@@ -29,6 +29,13 @@ namespace config {
     #define DEFAULT_TRACK 0
 
     #define SMALL_TRACK_SIZE 3
+
+    // ======================================================================
+    // UI CONFIG
+    // ======================================================================
+
+    #define SHOW_GRID_EVERY 4
+    #define MAX_UI_PAGES 2
 
     // ======================================================================
     // HARDWARE CONFIG
@@ -73,6 +80,6 @@ namespace config {
     #define B6_PIN 38
     #define B7_PIN 41
     #define B8_PIN 42
-    #define B9_PIN 19
-    #define B10_PIN 11
+    #define B9_PIN 11
+    #define B10_PIN 19
 }

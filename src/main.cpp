@@ -39,6 +39,7 @@ void setup()
 {
     Wire.begin(DAC_SDA, DAC_SCL);
     dac.begin(DAC_ADDR);
+
     pinMode(GATE_PIN, OUTPUT);
     pinMode(CLOCK_PIN, OUTPUT);
 
@@ -69,20 +70,24 @@ int track = 0; // TODO
 
 void loop() 
 {
-    interface.scan(seqEngine);
+    interface.scan();
+    interface.handleControls(seqEngine);
 
     if (millis () - lastReading >= tempoValue) 
     {
         seqEngine.nextTick();
 
-        dac.setVoltage(seqEngine.getStep(track).note * (DAC_VALUES / MAX_NOTE_VALUE), false);
+        dac.setVoltage(seqEngine.getNote(track) * (DAC_VALUES / MAX_NOTE_VALUE), false);
         digitalWrite(GATE_PIN, seqEngine.getStep(track).active);
         digitalWrite(CLOCK_PIN, HIGH);
 
         interface.update(seqEngine);
 
         lastReading = millis();
-        tempoValue = analogRead(A1);
+        tempoValue = 4096 - analogRead(TEMPO_PIN);
+        tempoValue = sqrt(tempoValue) * 4;
+        Serial.print(tempoValue);
+        Serial.println();
     }
 
     if (millis () - lastReading >= tempoValue / 2)
@@ -90,4 +95,5 @@ void loop()
         digitalWrite(CLOCK_PIN, LOW);
     } 
 }
+
 

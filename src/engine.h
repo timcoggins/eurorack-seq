@@ -51,5 +51,10 @@ namespace engine
             int currentSeq = tracks[track].currentSequence;
             return tracks[track].seqs[currentSeq].steps[currentStep];
         }
+
+        int getNote(int track) 
+        {
+            return tracks[track].currentNote;
+        }
     };
 }
