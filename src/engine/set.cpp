@@ -2,7 +2,7 @@
 
 using namespace Engine;
 
-void Engine::Set::randomiseAll() 
+void Engine::Set::setup() 
 {
     randomSeed(analogRead(RANDOM_SEED_PIN));
     for(int i = 0; i < MAX_TRACKS; i++) 

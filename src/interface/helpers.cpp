@@ -15,10 +15,12 @@ void Interface::Ui::nextPage() {
     if(page == MAX_UI_PAGES - 1)
     {
         page = 0;
+        lcdD.log("TRACK");
     }
     else
     {
         page += 1;
+        lcdD.log("OUTPUT");
     }
     display.clear();
 }

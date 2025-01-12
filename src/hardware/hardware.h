@@ -4,6 +4,7 @@
 #include <RotaryEncoder.h>
 #include <Adafruit_Protomatter.h>
 #include <LiquidCrystal_I2C.h>
+#include <Adafruit_MCP4725.h>
 
 #include "../config.h"
 #include "../engine/engine.h"
@@ -83,6 +84,26 @@ namespace Hardware
     {
         void setup();
         void log(char* text);
+    };
+
+    struct Output
+    {
+        Adafruit_MCP4725 dac;
+
+        void setup();
+        void setNote(int channel, int note); 
+        void setMod(int channel, int note); 
+        void setGate(int channel, bool gate);
+        void setTuning();
+    };
+
+    struct Clock
+    {
+        int tempoValue = 0;
+        int lastReading = 0;
+
+        void setup();
+        bool check();
     };
 
     /**

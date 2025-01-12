@@ -1,18 +1,66 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_MCP4725.h>
 #include "interface/interface.h"
 #include "engine/engine.h"
 #include "hardware/hardware.h"
 
 using namespace config;
 
-Adafruit_MCP4725 dac;
-
 Engine::Set engine;
-
+Hardware::Clock internalClock;
+Hardware::Output output;
 Interface::Ui ui;
 
+void checkPosition()
+{
+    ui.encoder.enc.tick(); // just call tick() to check the state.
+}
+
+// ======================================================================
+// SETUP
+// ======================================================================
+void setup() 
+{
+    Wire.begin(I2C_SDA, I2C_SCL);
+
+    engine.setup();
+    internalClock.setup();
+    output.setup(); 
+    ui.setup();
+    
+    attachInterrupt(digitalPinToInterrupt(ENC_PIN1), checkPosition, CHANGE);   
+    attachInterrupt(digitalPinToInterrupt(ENC_PIN2), checkPosition, CHANGE);
+}
+
+// ======================================================================
+// Main LOOP
+// ======================================================================
+void loop() 
+{
+    ui.scan();
+    ui.handleControls(engine);
+
+    if (internalClock.check()) 
+    {
+        engine.nextTick();
+        
+        for(int i = 0; i < MAX_TRACKS; i++)
+        {
+            output.setNote(i, engine.getNote(i));
+            output.setMod(i, engine.getStep(i).mod);
+            output.setGate(i, engine.getStep(i).active);
+        }
+
+        ui.handleDraw(engine);
+    }
+}
+
+
+/**
+ * FOR LATER
+ */
+
+// const uint8_t kUpdatePeriod = F_CPU / 32 / 8000 / 100;
 
 // TODO FIND INTERRUPTS FOR THIS BOARD
 
@@ -29,78 +77,14 @@ Interface::Ui ui;
 //   }
 // }
 
-// ======================================================================
-// SETUP
-// ======================================================================
 
-// const uint8_t kUpdatePeriod = F_CPU / 32 / 8000 / 100;
+// For Setup
+// TODO FIND INTERRUPTS FOR THIS BOARD
 
-void checkPosition()
-{
-    ui.encoder.enc.tick(); // just call tick() to check the state.
-}
+// sei();
+// UCSR0B = 0;
 
-void setup() 
-{
-    Wire.begin(DAC_SDA, DAC_SCL);
-    dac.begin(DAC_ADDR);
-
-    pinMode(GATE_PIN, OUTPUT);
-    pinMode(CLOCK_PIN, OUTPUT);
-
-    engine.randomiseAll();
-
-    ui.setup();
-
-    pinMode(TEMPO_PIN, INPUT);
-
-    attachInterrupt(digitalPinToInterrupt(ENC_PIN1), checkPosition, CHANGE);   
-    attachInterrupt(digitalPinToInterrupt(ENC_PIN2), checkPosition, CHANGE);
-
-
-    // TODO FIND INTERRUPTS FOR THIS BOARD
-
-    // sei();
-    // UCSR0B = 0;
-
-    // TCCR2A = _BV(WGM21);
-    // TCCR2B = 3;
-    // OCR2A = kUpdatePeriod - 1;
-    // TIMSK2 |= _BV(1);
-}
-
-// ======================================================================
-// Main LOOP
-// ======================================================================
-
-int tempoValue = 0;
-int lastReading = 0;
-int track = 0;
-
-void loop() 
-{
-    ui.scan();
-    ui.handleControls(engine);
-
-    if (millis () - lastReading >= tempoValue) 
-    {
-        engine.nextTick();
-
-        dac.setVoltage(engine.getNote(track) * (DAC_VALUES /MAX_NOTE_VALUE), false);
-        digitalWrite(GATE_PIN, engine.getStep(track).active);
-        digitalWrite(CLOCK_PIN, HIGH);
-
-        ui.handleDraw(engine);
-
-        lastReading = millis();
-        tempoValue = 4096 - analogRead(TEMPO_PIN);
-        tempoValue = sqrt(tempoValue) * 4;
-    }
-
-    if (millis () - lastReading >= tempoValue / 2)
-    {
-        digitalWrite(CLOCK_PIN, LOW);
-    } 
-}
-
-
+// TCCR2A = _BV(WGM21);
+// TCCR2B = 3;
+// OCR2A = kUpdatePeriod - 1;
+// TIMSK2 |= _BV(1);

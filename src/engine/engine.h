@@ -42,7 +42,6 @@ namespace Engine
         void unmute(int start_selection, int end_selection);
         // remove
         // insert
-
     };
 
     struct Track 
@@ -72,7 +71,7 @@ namespace Engine
     {
         Track tracks[MAX_TRACKS];
     
-        void randomiseAll();
+        void setup();
         void nextTick();
         Step getStep(int track);
         int getNote(int track);

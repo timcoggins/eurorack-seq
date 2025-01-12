@@ -12,7 +12,7 @@ namespace config {
     // ENGINE CONFIG
     // ======================================================================
 
-    #define MAX_TRACKS 3
+    #define MAX_TRACKS 1
     #define MAX_SEQUENCES 8
     #define MAX_STEPS 64
     #define MAX_NOTE_VALUE 16
@@ -46,9 +46,11 @@ namespace config {
     // HARDWARE CONFIG
     // ======================================================================
 
+    // I2C
+    #define I2C_SDA         39
+    #define I2C_SCL         40
+
     // DAC
-    #define DAC_SDA         39
-    #define DAC_SCL         40
     #define DAC_ADDR        0x62
     #define DAC_VALUES      4096                   // For 12 bit DAC
 
