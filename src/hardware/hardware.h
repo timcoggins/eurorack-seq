@@ -98,12 +98,13 @@ namespace Hardware
         int PIN;
         int lastButtonState = LOW;
         int state = LOW;
+        int buttonState = LOW;
 
         unsigned long lastDebounceTime = 0;
         unsigned long debounceDelay = 50;
 
         void setup(int bPIN);
-        int readDebounced();
+        void readDebounced();
         void read();
         int getState();
     };

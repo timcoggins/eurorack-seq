@@ -8,7 +8,7 @@ void Hardware::Button::setup(int bPIN)
     pinMode(PIN, INPUT);
 }
 
-int Hardware::Button::readDebounced() 
+void Hardware::Button::readDebounced() 
 {
     int reading = digitalRead(PIN);    
 
@@ -19,17 +19,20 @@ int Hardware::Button::readDebounced()
 
     if ((millis() - lastDebounceTime) > debounceDelay) 
     {
-        if (reading != state) {
-            state = reading;
-            if (state == HIGH) {
-                lastButtonState = reading;
-                return HIGH;
+        if (reading != buttonState) {
+            buttonState = reading;
+
+            if (buttonState == HIGH) {
+                state = HIGH;
             }
+        }
+        else 
+        {
+            state = LOW;
         }
     }
 
     lastButtonState = reading;
-    return LOW;
 }
 
 void Hardware::Button::read() 

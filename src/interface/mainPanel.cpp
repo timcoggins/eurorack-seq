@@ -41,7 +41,7 @@ void Interface::Ui::drawTrack(Engine::Track& track, int yOffset)
                     display.drawPixel(i, j + yOffset, Hardware::COLOUR_PLAYHEAD);
                 } 
                 // Cursor in Bounds
-                else if(i == track.cursor && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end) {
+                else if(i == track.cursor && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end && currentSequence.enableLoop) {
                     display.drawPixel(i, j + yOffset, Hardware::COLOUR_CURSOR_OVERLAP);
                 } 
                 // Cursor
@@ -49,7 +49,7 @@ void Interface::Ui::drawTrack(Engine::Track& track, int yOffset)
                     display.drawPixel(i, j + yOffset, Hardware::COLOUR_CURSOR);
                 } 
                 // Selection from Cursor in Bounds
-                else if (i > track.cursor && i < track.cursor + track.cursorLen && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end) 
+                else if (i > track.cursor && i < track.cursor + track.cursorLen && selectedTrack == t && i >= currentSequence.start && i <= currentSequence.end && currentSequence.enableLoop) 
                 {
                     display.drawPixel(i, j + yOffset, Hardware::COLOUR_CURSOR_OVERLAP);
                 } 
