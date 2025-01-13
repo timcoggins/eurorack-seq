@@ -47,6 +47,15 @@ namespace Interface
         void handleMainControls(Engine::Set& seq); 
         void drawMainPanel(Engine::Set& seq);
 
+        void drawDivider(int yOffset);
+        void drawTrack(Engine::Track& track, int yOffset);
+        void drawModTrack(Engine::Track& track, int yOffset);
+        void drawGateTrack(Engine::Track& track, int yOffset);
+        // void drawSequenceLength(Engine::Track& currentTrack, int y);
+        void drawSequenceSelector(Engine::Track& track, int yOffset);
+        void drawLoopBounds(Engine::Track& track, int yOffset);
+        void drawOutputVoltages(int note);
+
         void drawOutputPanel(Engine::Set& seq);
     };
 }

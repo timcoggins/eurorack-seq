@@ -2,6 +2,8 @@
 
 using namespace Hardware;
 
+LiquidCrystal_I2C lcd(0x27,20,4);
+
 void Hardware::LCD::setup() 
 {
     lcd.init();                      // initialize the lcd 

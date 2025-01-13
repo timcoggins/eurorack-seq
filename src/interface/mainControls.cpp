@@ -6,15 +6,15 @@ void Interface::Ui::drawMainPanel(Engine::Set& seq)
 {
     Engine::Track& track = seq.tracks[selectedTrack];
 
-    display.drawLoopBounds(track, 0);
-    display.drawDivider(2);
-    display.drawTrack(track, 3);
-    display.drawDivider(19);
-    display.drawDivider(25);
-    display.drawGateTrack(track, 26);
-    display.drawDivider(28);
+    drawLoopBounds(track, 0);
+    drawDivider(2);
+    drawTrack(track, 3);
+    drawDivider(19);
+    drawDivider(25);
+    drawGateTrack(track, 26);
+    drawDivider(28);
 
-    display.drawSequenceSelector(track, 30);
+    drawSequenceSelector(track, 30);
 }
 
 void Interface::Ui::handleMainControls(Engine::Set& seq)
