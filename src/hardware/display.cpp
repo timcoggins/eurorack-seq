@@ -2,14 +2,20 @@
 
 using namespace Hardware;
 
-static uint8_t rgbPins[]  = {4, 12, 13, 14, 15, 9};
-static uint8_t addrPins[] = {16, 17, 18, 10};
-static uint8_t clockPin   = 8;                         // Must be on same port as rgbPins
+// static uint8_t rgbPins[]  = {4, 12, 13, 14, 15, 9};
+// static uint8_t addrPins[] = {16, 17, 18, 10};
+// static uint8_t clockPin   = 8;                         // Must be on same port as rgbPins
+// static uint8_t latchPin   = 5;
+// static uint8_t oePin      = 6;
+
+static uint8_t rgbPins[]  = {10, 9, 46, 3, 8, 18};
+static uint8_t addrPins[] = {17, 16, 15, 7};
+static uint8_t clockPin   = 4;                         // Must be on same port as rgbPins
 static uint8_t latchPin   = 5;
 static uint8_t oePin      = 6;
 
 Adafruit_Protomatter matrix(
-    64,                                 // Width of matrix (or matrix chain) in pixels
+    128,                                 // Width of matrix (or matrix chain) in pixels
     4,                                  // Bit depth, 1-6
     1, rgbPins,                         // # of matrix chains, array of 6 RGB pins for each
     4, addrPins,                        // # of address pins (height is inferred), array of pins
@@ -55,5 +61,5 @@ void Hardware::Display::finishDraw()
 
 void Hardware::Display::clear() 
 {
-    matrix.fillRect(0, 0, 64, 32, COLOUR_BACKGROUND);
+    matrix.fillRect(0, 0, MAX_STEPS, 32, COLOUR_BACKGROUND);
 }

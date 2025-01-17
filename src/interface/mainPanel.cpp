@@ -114,7 +114,11 @@ void Interface::Ui::drawGateTrack(Engine::Track& track, int yOffset)
             {
                 display.drawLine(i, yOffset, i, yOffset + 1, Hardware::COLOUR_GATE_ACTIVE);
             } 
-            else 
+            else if(currentSequence.steps[i].accent == true)  
+            {
+                display.drawLine(i, yOffset, i, yOffset + 1, Hardware::COLOUR_RED);
+            }
+            else  
             {
                 display.drawLine(i, yOffset, i, yOffset + 1, Hardware::COLOUR_GATE);
             }

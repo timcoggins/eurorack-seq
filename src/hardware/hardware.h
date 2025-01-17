@@ -76,8 +76,9 @@ namespace Hardware
         void setup();
         void setNote(int channel, int note); 
         void setMod(int channel, int note); 
-        void setGate(int channel, bool gate);
+        void setGate(int channel, bool gate, bool accent);
         void setTuning();
+        void setMultiGate(bool b0, bool b1, bool b2, bool b3);
     };
 
     struct Clock

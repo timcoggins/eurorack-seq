@@ -16,18 +16,20 @@ void checkPosition()
     ui.encoder.enc.tick(); // just call tick() to check the state.
 }
 
+#define TEST 10 
+
 // ======================================================================
 // SETUP
 // ======================================================================
 void setup() 
 {
     Wire.begin(I2C_SDA, I2C_SCL);
-
+    
     engine.setup();
     internalClock.setup();
     output.setup(); 
     ui.setup();
-    
+
     attachInterrupt(digitalPinToInterrupt(ENC_PIN1), checkPosition, CHANGE);   
     attachInterrupt(digitalPinToInterrupt(ENC_PIN2), checkPosition, CHANGE);
 }
@@ -48,13 +50,14 @@ void loop()
         {
             output.setNote(i, engine.getNote(i));
             output.setMod(i, engine.getStep(i).mod);
-            output.setGate(i, engine.getStep(i).active);
+            output.setGate(i, engine.getStep(i).active, engine.getStep(i).accent);
         }
+
+        output.setMultiGate(engine.getStep(0).accent, engine.getStep(0).active, true, true);
 
         ui.handleDraw(engine);
     }
 }
-
 
 /**
  * FOR LATER

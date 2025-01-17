@@ -62,6 +62,17 @@ void Engine::Sequence::randomize(int start_selection, int end_selection)
         {
             steps[i].active = false;
         }
+
+        int accent = random(0, 100);
+
+        if(accent < 50)
+        {
+            steps[i].accent = true;
+        }
+        else
+        {
+            steps[i].accent = false;
+        }
     }   
 }
 

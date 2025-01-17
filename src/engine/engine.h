@@ -10,6 +10,7 @@ namespace Engine
         int length = 1;
         bool active = true;
         int mod = 3;
+        bool accent = false;
     };
 
     struct Sequence 
