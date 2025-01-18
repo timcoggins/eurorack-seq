@@ -15,9 +15,7 @@ void Hardware::Output::setup()
     mcp.begin(0x60);
 
     pinMode(latchPin, OUTPUT);
-
     pinMode(dataPin, OUTPUT);
-
     pinMode(clockPin, OUTPUT);
 }
 
@@ -27,9 +25,9 @@ void Hardware::Output::setNote(int channel, int note)
     mcp.setChannelValue(MCP4728_CHANNEL_A, note * (DAC_VALUES / MAX_NOTE_VALUE));
 } 
 
-void Hardware::Output::setMod(int channel, int note)
+void Hardware::Output::setMod(int channel, int value)
 {
-    mcp.setChannelValue(MCP4728_CHANNEL_D, note * (DAC_VALUES / MAX_NOTE_VALUE));
+    mcp.setChannelValue(MCP4728_CHANNEL_D, value * (DAC_VALUES / MAX_MOD_VALUE));
 }
 
 void Hardware::Output::setGate(int channel, bool gate, bool accent)

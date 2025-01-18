@@ -13,10 +13,10 @@ namespace config {
     // ======================================================================
 
     #define MAX_TRACKS 1
-    #define MAX_SEQUENCES 8
+    #define MAX_SEQUENCES 64
     #define MAX_STEPS 128
     #define MAX_NOTE_VALUE 16
-    #define MAX_MOD_VALUE 8
+    #define MAX_MOD_VALUE 5
 
     #define RANDOM_MIN_NOTE 0
     #define RANDOM_MAX_NOTE MAX_NOTE_VALUE

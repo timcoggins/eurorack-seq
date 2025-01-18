@@ -10,8 +10,9 @@ void Interface::Ui::drawMainPanel(Engine::Set& seq)
     drawDivider(2);
     drawTrack(track, 3);
     drawDivider(19);
-    drawDivider(25);
-    drawGateTrack(track, 26);
+    drawGateTrack(track, 20);
+    drawDivider(22);
+    drawModTrack(track, 23);
     drawDivider(28);
 
     drawSequenceSelector(track, 30);
